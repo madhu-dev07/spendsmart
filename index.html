@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpendSmart - Personal Finance Dashboard</title>
+  
+  <!-- Google Fonts (Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ==================== AUTHENTICATION OVERLAY / SCREEN ==================== -->
+  <div class="auth-overlay active" id="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-brand-icon">
+          <i data-lucide="wallet"></i>
+        </div>
+        <h2 class="auth-brand-title">SpendSmart</h2>
+        <p class="auth-brand-subtitle">Smart Personal Finance Tracker</p>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="auth-tab-login">Log In</button>
+        <button class="auth-tab-btn" id="auth-tab-signup">Sign Up</button>
+      </div>
+
+      <!-- Log In Form -->
+      <form id="login-form" class="auth-form">
+        <div class="form-group">
+          <label for="login-email">Email Address</label>
+          <input type="email" id="login-email" class="form-input" placeholder="e.g. alex@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+            <button type="button" class="password-toggle-btn" id="toggle-login-password" title="Show/Hide Password">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full mt-4">
+          <i data-lucide="log-in"></i> Log In
+        </button>
+        <p class="text-xs text-center text-muted mt-4">
+          Demo Mode: Enter any email & password or create a new account to begin cleanly.
+        </p>
+      </form>
+
+      <!-- Sign Up Form -->
+      <form id="signup-form" class="auth-form hidden">
+        <div class="form-group">
+          <label for="signup-name">Full Name</label>
+          <input type="text" id="signup-name" class="form-input" placeholder="e.g. Alex Johnson" required>
+        </div>
+        <div class="form-group">
+          <label for="signup-email">Email Address</label>
+          <input type="email" id="signup-email" class="form-input" placeholder="e.g. alex@example.com" required>
+        </div>
+        <div class="form-group">
+          <label for="signup-password">Password</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="signup-password" class="form-input" placeholder="Create password (min 4 chars)" required minlength="4">
+            <button type="button" class="password-toggle-btn" id="toggle-signup-password" title="Show/Hide Password">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full mt-4">
+          <i data-lucide="user-plus"></i> Create Account
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APPLICATION CONTAINER ==================== -->
+  <div class="app-container" id="app-container">
+    
+    <!-- Sidebar Navigation (Desktop) -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i data-lucide="wallet"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">SpendSmart</span>
+          <span class="brand-subtitle">Finance Hub</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-target="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-target="transactions">
+          <i data-lucide="receipt"></i>
+          <span>Transactions</span>
+        </button>
+        <button class="nav-item" data-target="sms-import">
+          <i data-lucide="message-square-code"></i>
+          <span>SMS Import</span>
+        </button>
+        <button class="nav-item" data-target="budget">
+          <i data-lucide="pie-chart"></i>
+          <span>Monthly Budget</span>
+        </button>
+        <button class="nav-item" data-target="savings">
+          <i data-lucide="piggy-bank"></i>
+          <span>Savings Goals</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="quick-actions">
+          <button class="btn btn-primary btn-full" id="sidebar-add-btn">
+            <i data-lucide="plus-circle"></i>
+            <span>Add Transaction</span>
+          </button>
+        </div>
+        <div class="user-profile-row">
+          <div class="user-profile">
+            <div class="avatar" id="user-avatar-initials">--</div>
+            <div class="user-info">
+              <span class="user-name" id="user-display-name">Guest User</span>
+              <span class="user-status" id="user-display-email">Personal Account</span>
+            </div>
+          </div>
+          <button class="action-btn action-btn-danger" id="logout-btn" title="Log Out">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Overlay for mobile sidebar toggle -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper">
+      
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-toggle-btn" id="mobile-toggle">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="page-title-container">
+            <h1 class="page-title" id="page-title">Dashboard</h1>
+            <p class="page-subtitle" id="page-subtitle">Overview of your financial activity</p>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="currency-selector">
+            <span class="currency-label">Currency:</span>
+            <select id="currency-select" class="form-select-sm">
+              <option value="₹" selected>₹ (INR)</option>
+              <option value="$">$ (USD)</option>
+              <option value="€">€ (EUR)</option>
+              <option value="£">£ (GBP)</option>
+            </select>
+          </div>
+
+          <button class="icon-btn" id="logout-header-btn" title="Log Out">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Body View Area -->
+      <main class="content-body">
+
+        <!-- ==================== 1. DASHBOARD VIEW ==================== -->
+        <section class="view-section active" id="view-dashboard">
+          
+          <!-- Summary Cards Grid with Quick Action Shortcuts -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-header">
+                <span class="metric-label">Total Balance</span>
+                <div class="metric-icon icon-balance">
+                  <i data-lucide="credit-card"></i>
+                </div>
+              </div>
+              <div class="metric-value" id="dash-total-balance">₹0.00</div>
+              <div class="metric-footer">
+                <span class="trend-badge trend-up">
+                  <i data-lucide="trending-up"></i> Net Active Balance
+                </span>
+              </div>
+            </div>
+
+            <div class="metric-card clickable-card" id="card-add-income" title="Click to Add Income">
+              <div class="metric-header">
+                <span class="metric-label">Monthly Income</span>
+                <div class="metric-icon icon-income">
+                  <i data-lucide="arrow-down-left"></i>
+                </div>
+              </div>
+              <div class="metric-value text-success" id="dash-monthly-income">₹0.00</div>
+              <div class="metric-footer flex-between">
+                <span class="text-muted" id="dash-income-count">0 entries</span>
+                <span class="card-shortcut-link text-success">+ Add Income</span>
+              </div>
+            </div>
+
+            <div class="metric-card clickable-card" id="card-add-expense" title="Click to Add Expense">
+              <div class="metric-header">
+                <span class="metric-label">Monthly Expenses</span>
+                <div class="metric-icon icon-expense">
+                  <i data-lucide="arrow-up-right"></i>
+                </div>
+              </div>
+              <div class="metric-value text-danger" id="dash-monthly-expense">₹0.00</div>
+              <div class="metric-footer flex-between">
+                <span class="text-muted" id="dash-expense-count">0 entries</span>
+                <span class="card-shortcut-link text-danger">+ Add Expense</span>
+              </div>
+            </div>
+
+            <div class="metric-card clickable-card" id="card-set-budget" title="Click to Set Target Budget">
+              <div class="metric-header">
+                <span class="metric-label">Remaining Budget</span>
+                <div class="metric-icon icon-budget">
+                  <i data-lucide="target"></i>
+                </div>
+              </div>
+              <div class="metric-value" id="dash-remaining-budget">₹0.00</div>
+              <div class="metric-footer flex-between">
+                <span class="text-muted text-xs" id="dash-budget-percent">0% used</span>
+                <span class="card-shortcut-link text-primary">✏️ Set Budget</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Budget Warning Alert Banner (if >= 80% spent) -->
+          <div class="alert-banner alert-warning hidden" id="dash-budget-warning">
+            <div class="alert-icon">
+              <i data-lucide="alert-triangle"></i>
+            </div>
+            <div class="alert-content">
+              <span class="alert-title">Budget Limit Alert</span>
+              <p class="alert-message" id="dash-warning-text">You have used 85% of your monthly budget.</p>
+            </div>
+            <button class="btn btn-sm btn-outline-warning" id="warning-view-budget-btn">View Budget</button>
+          </div>
+
+          <!-- Charts Section Grid -->
+          <div class="charts-grid">
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3 class="card-title">Income vs Expenses</h3>
+                <span class="text-muted text-xs">Monthly Comparison</span>
+              </div>
+              <div class="card-body chart-container">
+                <canvas id="incomeExpenseChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card chart-card">
+              <div class="card-header">
+                <h3 class="card-title">Spending by Category</h3>
+                <span class="text-muted text-xs">Category Breakdown</span>
+              </div>
+              <div class="card-body chart-container">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Transactions Widget -->
+          <div class="card">
+            <div class="card-header flex-between">
+              <div>
+                <h3 class="card-title">Recent Transactions</h3>
+                <p class="text-muted text-xs">Latest activity recorded</p>
+              </div>
+              <button class="btn btn-link" id="dash-view-all-tx">
+                View All <i data-lucide="chevron-right"></i>
+              </button>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Merchant / Title</th>
+                      <th>Category</th>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th class="text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-recent-tx-tbody">
+                    <!-- Dynamic rendering -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==================== 2. TRANSACTIONS VIEW ==================== -->
+        <section class="view-section" id="view-transactions">
+          
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <div class="search-input-wrapper">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="tx-search" class="form-input" placeholder="Search merchant, category, notes...">
+              </div>
+              
+              <div class="filter-group">
+                <select id="tx-filter-type" class="form-select">
+                  <option value="all">All Types</option>
+                  <option value="credit">Income (Credit)</option>
+                  <option value="debit">Expense (Debit)</option>
+                </select>
+
+                <select id="tx-filter-category" class="form-select">
+                  <option value="all">All Categories</option>
+                  <option value="Food">Food</option>
+                  <option value="Shopping">Shopping</option>
+                  <option value="Transport">Transport</option>
+                  <option value="Bills">Bills</option>
+                  <option value="Education">Education</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="toolbar-right">
+              <button class="btn btn-primary" id="open-add-tx-btn">
+                <i data-lucide="plus"></i>
+                <span>Add Transaction</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Transaction Statistics Pills -->
+          <div class="stats-pills-row">
+            <div class="stat-pill">
+              <span class="stat-pill-label">Filtered Total:</span>
+              <span class="stat-pill-value" id="tx-summary-total">₹0.00</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-pill-label">Total Income:</span>
+              <span class="stat-pill-value text-success" id="tx-summary-income">₹0.00</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-pill-label">Total Expense:</span>
+              <span class="stat-pill-value text-danger" id="tx-summary-expense">₹0.00</span>
+            </div>
+          </div>
+
+          <!-- Transactions Table Card -->
+          <div class="card">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Merchant</th>
+                      <th>Category</th>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th class="text-right">Amount</th>
+                      <th class="text-center" style="width: 100px;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tx-table-tbody">
+                    <!-- Dynamic Rows -->
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="empty-state hidden" id="tx-empty-state">
+                <div class="empty-icon">
+                  <i data-lucide="receipt"></i>
+                </div>
+                <h4>No transactions yet</h4>
+                <p class="text-muted">Click "+ Add Transaction" or use SMS Import to add your first entry.</p>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==================== 3. SMS TRANSACTION IMPORT VIEW ==================== -->
+        <section class="view-section" id="view-sms-import">
+          
+          <div class="sms-container-grid">
+            
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Paste Bank SMS Notification</h3>
+                <p class="text-muted text-xs">Instantly extract transaction details using smart client-side regex parsing</p>
+              </div>
+              <div class="card-body">
+                
+                <div class="info-box">
+                  <i data-lucide="shield-alert" class="info-icon"></i>
+                  <div>
+                    <strong>Privacy Note:</strong> This feature parses text pasted by you right in your browser. SpendSmart does not connect to your phone's private SMS inbox or store your data on external servers.
+                  </div>
+                </div>
+
+                <div class="sample-templates-wrapper">
+                  <span class="text-xs font-semibold text-muted">Try sample messages:</span>
+                  <div class="template-buttons">
+                    <button class="btn btn-sm btn-light" id="sms-sample-1">Sample Debit (Store)</button>
+                    <button class="btn btn-sm btn-light" id="sms-sample-2">Sample Credit (Salary)</button>
+                    <button class="btn btn-sm btn-light" id="sms-sample-3">Sample Food Delivery</button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="sms-input-text">Bank SMS Text</label>
+                  <textarea id="sms-input-text" class="form-textarea" rows="4" placeholder="Paste bank SMS here... e.g. 'Rs. 250 debited from A/c XX1234 at ABC Store on 02-Oct-2026.'"></textarea>
+                </div>
+
+                <button class="btn btn-primary btn-full" id="sms-parse-btn">
+                  <i data-lucide="wand-2"></i>
+                  <span>Parse SMS</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Parsed Preview Card -->
+            <div class="card" id="sms-preview-card">
+              <div class="card-header">
+                <h3 class="card-title">Transaction Preview</h3>
+                <p class="text-muted text-xs">Review extracted data before saving to your ledger</p>
+              </div>
+              <div class="card-body">
+                
+                <div id="sms-preview-placeholder" class="empty-state">
+                  <div class="empty-icon">
+                    <i data-lucide="scan-line"></i>
+                  </div>
+                  <h4>No SMS Parsed Yet</h4>
+                  <p class="text-muted">Paste an SMS on the left and click "Parse SMS" to preview extracted details.</p>
+                </div>
+
+                <form id="sms-confirm-form" class="hidden">
+                  <div class="form-group">
+                    <label for="sms-parsed-merchant">Merchant / Title</label>
+                    <input type="text" id="sms-parsed-merchant" class="form-input" required>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label for="sms-parsed-amount">Amount</label>
+                      <input type="number" step="0.01" id="sms-parsed-amount" class="form-input" required>
+                    </div>
+                    <div class="form-group col-6">
+                      <label for="sms-parsed-type">Type</label>
+                      <select id="sms-parsed-type" class="form-select" required>
+                        <option value="debit">Expense (Debit)</option>
+                        <option value="credit">Income (Credit)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label for="sms-parsed-category">Category</label>
+                      <select id="sms-parsed-category" class="form-select" required>
+                        <option value="Food">Food</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Bills">Bills</option>
+                        <option value="Education">Education</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div class="form-group col-6">
+                      <label for="sms-parsed-date">Date</label>
+                      <input type="date" id="sms-parsed-date" class="form-input" required>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="sms-parsed-raw">Raw Extracted Snippet</label>
+                    <input type="text" id="sms-parsed-raw" class="form-input" readonly disabled>
+                  </div>
+
+                  <div class="flex-actions mt-4">
+                    <button type="button" class="btn btn-secondary" id="sms-cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                      <i data-lucide="check-circle"></i> Confirm & Save
+                    </button>
+                  </div>
+                </form>
+
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ==================== 4. MONTHLY BUDGET VIEW ==================== -->
+        <section class="view-section" id="view-budget">
+          
+          <div class="budget-overview-card card">
+            <div class="card-body">
+              <div class="budget-header-flex">
+                <div>
+                  <h3 class="budget-title">Monthly Spending Budget</h3>
+                  <p class="text-muted text-xs">Set your monthly limit and track your spending in real time</p>
+                </div>
+                <button class="btn btn-outline" id="open-edit-budget-btn">
+                  <i data-lucide="edit-3"></i> Set Target Budget
+                </button>
+              </div>
+
+              <div class="budget-stats-grid mt-4">
+                <div class="budget-stat">
+                  <span class="stat-label">Budget Target</span>
+                  <span class="stat-val" id="budget-val-target">₹0.00</span>
+                </div>
+                <div class="budget-stat">
+                  <span class="stat-label">Total Spent</span>
+                  <span class="stat-val text-danger" id="budget-val-spent">₹0.00</span>
+                </div>
+                <div class="budget-stat">
+                  <span class="stat-label">Remaining Balance</span>
+                  <span class="stat-val text-success" id="budget-val-remaining">₹0.00</span>
+                </div>
+              </div>
+
+              <!-- Main Progress Bar -->
+              <div class="main-progress-container mt-4">
+                <div class="progress-bar-label-row">
+                  <span class="font-medium text-xs text-muted">Budget Utilization</span>
+                  <span class="font-bold text-sm" id="budget-percent-label">0%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="budget-progress-fill" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- 80% Warning Banner on Budget Page -->
+              <div class="alert-banner alert-warning mt-4 hidden" id="budget-warning-banner">
+                <div class="alert-icon">
+                  <i data-lucide="alert-triangle"></i>
+                </div>
+                <div class="alert-content">
+                  <span class="alert-title">High Spending Notice</span>
+                  <p class="alert-message" id="budget-warning-message">You have reached 80% or more of your monthly budget limit.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Category Budget Breakdowns -->
+          <div class="mt-6">
+            <h3 class="section-heading mb-4">Category Spending Breakdowns</h3>
+            <div class="category-budgets-grid" id="category-budgets-container">
+              <!-- Dynamically generated category progress cards -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ==================== 5. SAVINGS GOALS VIEW ==================== -->
+        <section class="view-section" id="view-savings">
+          
+          <div class="toolbar">
+            <div class="toolbar-left">
+              <div>
+                <h3 class="section-heading">Savings & Financial Goals</h3>
+                <p class="text-muted text-xs">Track progress towards your target savings milestones</p>
+              </div>
+            </div>
+            <div class="toolbar-right">
+              <button class="btn btn-primary" id="open-add-goal-btn">
+                <i data-lucide="plus-circle"></i>
+                <span>Create New Goal</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Goals Cards Grid -->
+          <div class="savings-grid" id="savings-goals-container">
+            <!-- Dynamic savings goal cards -->
+          </div>
+
+          <div class="empty-state hidden" id="savings-empty-state">
+            <div class="empty-icon">
+              <i data-lucide="piggy-bank"></i>
+            </div>
+            <h4>No Savings Goals Created</h4>
+            <p class="text-muted">Click "+ Create New Goal" to set up your first savings milestone.</p>
+          </div>
+
+        </section>
+
+      </main>
+
+      <!-- Bottom Mobile Navigation Bar -->
+      <nav class="mobile-bottom-nav">
+        <button class="mobile-nav-item active" data-target="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Home</span>
+        </button>
+        <button class="mobile-nav-item" data-target="transactions">
+          <i data-lucide="receipt"></i>
+          <span>Transactions</span>
+        </button>
+        <button class="mobile-nav-item" data-target="sms-import">
+          <i data-lucide="message-square-code"></i>
+          <span>SMS</span>
+        </button>
+        <button class="mobile-nav-item" data-target="budget">
+          <i data-lucide="pie-chart"></i>
+          <span>Budget</span>
+        </button>
+        <button class="mobile-nav-item" data-target="savings">
+          <i data-lucide="piggy-bank"></i>
+          <span>Savings</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Add/Edit Transaction Modal -->
+  <div class="modal-overlay" id="tx-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="tx-modal-title">Add Transaction</h3>
+        <button class="modal-close-btn" id="tx-modal-close">&times;</button>
+      </div>
+      <form id="tx-form">
+        <input type="hidden" id="tx-id">
+        <div class="modal-body">
+          
+          <div class="form-group">
+            <label for="tx-merchant">Merchant / Title *</label>
+            <input type="text" id="tx-merchant" class="form-input" placeholder="e.g. Swiggy, Amazon, Salary" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label for="tx-amount">Amount *</label>
+              <input type="number" step="0.01" min="0.01" id="tx-amount" class="form-input" placeholder="0.00" required>
+            </div>
+            <div class="form-group col-6">
+              <label for="tx-type">Transaction Type *</label>
+              <select id="tx-type" class="form-select" required>
+                <option value="debit">Expense (Debit)</option>
+                <option value="credit">Income (Credit)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label for="tx-category">Category *</label>
+              <select id="tx-category" class="form-select" required>
+                <option value="Food">Food</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Transport">Transport</option>
+                <option value="Bills">Bills</option>
+                <option value="Education">Education</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group col-6">
+              <label for="tx-date">Date *</label>
+              <input type="date" id="tx-date" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="tx-notes">Notes / Remarks (Optional)</label>
+            <input type="text" id="tx-notes" class="form-input" placeholder="Add optional reference note...">
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="tx-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="tx-modal-submit">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Set Budget Modal -->
+  <div class="modal-overlay" id="budget-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Set Monthly Spending Budget</h3>
+        <button class="modal-close-btn" id="budget-modal-close">&times;</button>
+      </div>
+      <form id="budget-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="input-monthly-budget">Overall Monthly Budget Target *</label>
+            <input type="number" step="100" min="1" id="input-monthly-budget" class="form-input" placeholder="e.g. 50000" required>
+            <p class="text-muted text-xs mt-1">Set your total target spend limit for the current calendar month.</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="budget-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Savings Goal Modal -->
+  <div class="modal-overlay" id="goal-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="goal-modal-title">Create Savings Goal</h3>
+        <button class="modal-close-btn" id="goal-modal-close">&times;</button>
+      </div>
+      <form id="goal-form">
+        <input type="hidden" id="goal-id">
+        <div class="modal-body">
+          
+          <div class="form-group">
+            <label for="goal-name">Goal Name *</label>
+            <input type="text" id="goal-name" class="form-input" placeholder="e.g. Emergency Fund, New Laptop, Vacation" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label for="goal-target">Target Amount *</label>
+              <input type="number" step="100" min="1" id="goal-target" class="form-input" placeholder="100000" required>
+            </div>
+            <div class="form-group col-6">
+              <label for="goal-saved">Current Saved Amount</label>
+              <input type="number" step="100" min="0" id="goal-saved" class="form-input" placeholder="0">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="goal-icon">Icon / Theme</label>
+            <select id="goal-icon" class="form-select">
+              <option value="shield">Shield (Emergency)</option>
+              <option value="laptop">Laptop (Gadgets)</option>
+              <option value="plane">Plane (Travel)</option>
+              <option value="car">Car (Vehicle)</option>
+              <option value="home">Home (Property)</option>
+              <option value="heart-handshake">Custom / Other</option>
+            </select>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="goal-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Goal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Deposit / Add Funds to Goal Modal -->
+  <div class="modal-overlay" id="deposit-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Deposit to Savings Goal</h3>
+        <button class="modal-close-btn" id="deposit-modal-close">&times;</button>
+      </div>
+      <form id="deposit-form">
+        <input type="hidden" id="deposit-goal-id">
+        <div class="modal-body">
+          <p class="text-sm font-medium text-muted mb-2">Goal: <span id="deposit-goal-title" class="text-dark font-bold">--</span></p>
+          <div class="form-group">
+            <label for="deposit-amount">Deposit Amount *</label>
+            <input type="number" step="10" min="1" id="deposit-amount" class="form-input" placeholder="5000" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="deposit-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-success">Add Deposit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Application Script -->
+  <script src="script.js"></script>
+</body>
+</html>
